@@ -119,7 +119,7 @@ with CreatableRelationProvider{
 			var bins = ListBuffer[Bin]()
 			binsOnly.foreach { binName => 
 			  val bin = TypeConverter.fieldToBin(schema, row, binName)
-			  bins += bin
+			  if (bin != null) bins += bin
 			}
 			try {
 			  
