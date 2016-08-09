@@ -19,6 +19,7 @@ import org.apache.spark.sql.SQLContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.DateType
+import scala.collection.JavaConversions._
 
 /**
  * This object provides utility methods to convert between
@@ -51,10 +52,14 @@ object TypeConverter{
 		}
     value
   }
-  
+
+  private def isPod(dt: DataType) = dt match {
+    case LongType | IntegerType | ShortType | DoubleType | FloatType => true
+    case _ => false
+  }
+
   def fieldToBin(schema: StructType, row:Row, field:String): Bin = {
-    
-		val value = row(schema.fieldIndex(field))
+    val value = row(schema.fieldIndex(field))
     val binValue = schema(field).dataType match {
 		  case LongType => if (value == null) null else value.asInstanceOf[java.lang.Long]
 		  case IntegerType => if (value == null) null else new java.lang.Long(value.asInstanceOf[Int])
@@ -62,8 +67,20 @@ object TypeConverter{
 		  case DoubleType => if (value == null) null else value.asInstanceOf[java.lang.Double]
 		  case FloatType => if (value == null) null else value.asInstanceOf[java.lang.Double]
 		  case DateType => if (value == null) null else value.asInstanceOf[java.sql.Date].getTime
-		  case _: ArrayType => value
-		  case _: MapType => value
+		  case dt: ArrayType => (value, dt.elementType) match {
+            case (null, _) => null
+            case (_, et) if isPod(et) => seqAsJavaList(value.asInstanceOf[List[_]])
+            case (_, DateType) => seqAsJavaList(value.asInstanceOf[List[java.sql.Date]].map(_.getTime))
+            case (_, _) => value
+          }
+		  case dt: MapType => (value, dt.keyType, dt.valueType) match {
+            case (null, _, _) => null
+            case (_, kt, vt) if isPod(kt) && isPod(vt) => mapAsJavaMap(value.asInstanceOf[Map[_, _]])
+            case (_, DateType, DateType) => mapAsJavaMap(value.asInstanceOf[Map[java.sql.Date, java.sql.Date]].map{ case (k, v) => (k.getTime, v.getTime)})
+            case (_, DateType, vt) if isPod(vt) => mapAsJavaMap(value.asInstanceOf[Map[java.sql.Date, _]].map{ case (k, v) => (k.getTime, v)})
+            case (_, kt, DateType) if isPod(kt) => mapAsJavaMap(value.asInstanceOf[Map[_, java.sql.Date]].map{ case (k, v) => (k, v.getTime)})
+            case (_, _, _) => value
+          }
 		  case null => null
 		  case _ => if (value == null) null else value.toString()
 		}

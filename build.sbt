@@ -2,7 +2,7 @@ import sbtassembly.MergeStrategy._
 
 name := "aerospike-spark"
 
-version := "1.1.2"
+version := "1.1.2-MI"
 
 organization := "com.aerospike"
 
@@ -21,6 +21,8 @@ libraryDependencies ++= Seq("org.apache.spark" %% "spark-core" % "1.6.2" % "prov
 resolvers ++= Seq("Local Maven" at Path.userHome.asFile.toURI.toURL + ".m2/repository")
 
 assemblyMergeStrategy in assembly := {
+    case x if x.contains("log4j") =>
+        MergeStrategy.last
     case x if Assembly.isConfigFile(x) =>
       MergeStrategy.concat
     case PathList(ps @ _*) if Assembly.isReadme(ps.last) || Assembly.isLicenseFile(ps.last) =>
