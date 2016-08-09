@@ -54,13 +54,14 @@ object TypeConverter{
   }
 
   private def isPod(dt: DataType) = dt match {
-    case LongType | IntegerType | ShortType | DoubleType | FloatType => true
+    case StringType | LongType | IntegerType | ShortType | DoubleType | FloatType => true
     case _ => false
   }
 
   def fieldToBin(schema: StructType, row:Row, field:String): Bin = {
     val value = row(schema.fieldIndex(field))
     val binValue = schema(field).dataType match {
+          case StringType => value
 		  case LongType => if (value == null) null else value.asInstanceOf[java.lang.Long]
 		  case IntegerType => if (value == null) null else new java.lang.Long(value.asInstanceOf[Int])
 		  case ShortType => if (value == null) null else value.asInstanceOf[java.lang.Long]
@@ -86,7 +87,9 @@ object TypeConverter{
               if (value == null) null
               else throw new IllegalArgumentException(s"Field: ${field} -- None pod type is not allowed.")
     }
-    new Bin(field, binValue)
+
+    if (binValue != null) new Bin(field, binValue)
+    else null
   }
   
 	def valueToSchema(bin: (String, Object)): StructField = {
