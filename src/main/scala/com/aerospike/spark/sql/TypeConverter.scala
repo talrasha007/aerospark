@@ -88,8 +88,7 @@ object TypeConverter{
               else throw new IllegalArgumentException(s"Field: ${field} -- None pod type is not allowed.")
     }
 
-    if (binValue != null) new Bin(field, binValue)
-    else null
+    new Bin(field, binValue)
   }
   
 	def valueToSchema(bin: (String, Object)): StructField = {
