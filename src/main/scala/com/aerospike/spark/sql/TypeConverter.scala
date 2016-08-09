@@ -71,7 +71,7 @@ object TypeConverter{
             case (null, _) => null
             case (_, et) if isPod(et) => seqAsJavaList(value.asInstanceOf[List[_]])
             case (_, DateType) => seqAsJavaList(value.asInstanceOf[List[java.sql.Date]].map(_.getTime))
-            case (_, _) => value
+            case (_, _) => throw new IllegalArgumentException(s"Field: ${field} -- None pod type is not allowed.")
           }
 		  case dt: MapType => (value, dt.keyType, dt.valueType) match {
             case (null, _, _) => null
@@ -79,11 +79,13 @@ object TypeConverter{
             case (_, DateType, DateType) => mapAsJavaMap(value.asInstanceOf[Map[java.sql.Date, java.sql.Date]].map{ case (k, v) => (k.getTime, v.getTime)})
             case (_, DateType, vt) if isPod(vt) => mapAsJavaMap(value.asInstanceOf[Map[java.sql.Date, _]].map{ case (k, v) => (k.getTime, v)})
             case (_, kt, DateType) if isPod(kt) => mapAsJavaMap(value.asInstanceOf[Map[_, java.sql.Date]].map{ case (k, v) => (k, v.getTime)})
-            case (_, _, _) => value
+            case (_, _, _) => throw new IllegalArgumentException(s"Field: ${field} -- None pod type is not allowed.")
           }
 		  case null => null
-		  case _ => if (value == null) null else value.toString()
-		}
+		  case _ =>
+              if (value == null) null
+              else throw new IllegalArgumentException(s"Field: ${field} -- None pod type is not allowed.")
+    }
     new Bin(field, binValue)
   }
   
